@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="login">
+    <input id="userId" placeholder="Enter your user ID" />
+    <input id="receiverId" placeholder="Enter receiver ID" />
+    <button onclick="joinChat()">Join Chat</button>
+  </div>
+  <div id="chat" style="display:none;">
+    <ul id="messages"></ul>
+    <input id="messageInput" autocomplete="off" /><button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const socket = io();
+    let jobId = '60d21b4667d0d8992e610c85'; // Replace with actual job ID
+    let userId;
+    let receiverId;
+
+    function joinChat() {
+      userId = document.getElementById('userId').value;
+      receiverId = document.getElementById('receiverId').value;
+
+      if (userId && receiverId) {
+        socket.emit('joinRoom', { jobId, userId });
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('chat').style.display = 'block';
+      } else {
+        alert('Please enter both user ID and receiver ID');
+      }
+    }
+
+    socket.on('receiveMessage', (message) => {
+      const item = document.createElement('li');
+      item.textContent = `${message.sender}: ${message.message}`;
+      document.getElementById('messages').appendChild(item);
+    });
+
+    function sendMessage() {
+      const message = document.getElementById('messageInput').value;
+      socket.emit('sendMessage', { jobId, sender: userId, receiver: receiverId, message });
+      document.getElementById('messageInput').value = '';
+    }
+  </script>
+</body>
+</html>

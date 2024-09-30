@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freelancer Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="login">
+    <input id="userId" placeholder="Enter your user ID" />
+    <input id="jobId" placeholder="Enter job ID" />
+    <button onclick="joinChat()">Join Chat</button>
+  </div>
+  <div id="chat" style="display:none;">
+    <ul id="messages"></ul>
+    <input id="messageInput" autocomplete="off" /><button onclick="sendMessage()">Send</button>
+  </div>
+  <script>
+    const socket = io();
+    let jobId;
+    let userId;
+
+    function isValidObjectId(id) {
+      return /^[0-9a-fA-F]{24}$/.test(id);
+    }
+
+    function joinChat() {
+      userId = document.getElementById('userId').value;
+      jobId = document.getElementById('jobId').value;
+
+      if (!isValidObjectId(userId) || !isValidObjectId(jobId)) {
+        alert('Invalid user ID or job ID');
+        return;
+      }
+
+      socket.emit('joinRoom', { jobId, userId });
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('chat').style.display = 'block';
+    }
+
+    socket.on('previousMessages', (messages) => {
+      const messagesList = document.getElementById('messages');
+      messagesList.innerHTML = ''; // Clear existing messages
+      messages.forEach((message) => {
+        const item = document.createElement('li');
+        item.textContent = `${message.username}: ${message.message}`;
+        messagesList.appendChild(item);
+      });
+    });
+
+    socket.on('receiveMessage', (message) => {
+      const item = document.createElement('li');
+      item.textContent = `${message.username}: ${message.message}`;
+      document.getElementById('messages').appendChild(item);
+    });
+
+    function sendMessage() {
+      const message = document.getElementById('messageInput').value;
+      socket.emit('sendMessage', { jobId, sender: userId, message });
+      document.getElementById('messageInput').value = '';
+    }
+  </script>
+</body>
+</html>
