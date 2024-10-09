@@ -9,8 +9,9 @@ const userSchema = new mongoose.Schema({
   userType: { type: String, enum: ['client', 'freelancer', 'superuser'], default: 'client' },
   isSuperUser: { type: Boolean, default: false },
   jobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
-  activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }], // Add this line
-  oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }] // Add this line
+  activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }],
+  oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }],
+  wallet: { type: Number, default: 0 } // Add wallet field
 });
 
 // Hash the password before saving the user

@@ -2,9 +2,8 @@ const User = require('../models/userModel');
 const Project = require('../models/projectModel');
 const FreelancerProject = require('../models/projectFreelanceModel');
 const Job = require('../models/jobModel'); // Import the Job model
+const WalletTransaction = require('../models/walletModel'); // Import the WalletTransaction model
 const jwt = require('jsonwebtoken');
-
-
 const mongoose = require('mongoose');
 
 exports.createProject = async (req, res) => {
@@ -187,9 +186,13 @@ exports.createJob = async (req, res) => {
   }
 };
 
-// Apply for a job
+// Apply for a job and handle money transaction
 exports.applyForJob = async (req, res) => {
   const { jobId, freelancerId } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(freelancerId)) {
+    return res.status(400).json({ message: 'Invalid job ID or freelancer ID' });
+  }
 
   try {
     const job = await Job.findById(jobId);
@@ -197,24 +200,64 @@ exports.applyForJob = async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
+    const client = await User.findById(job.client);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
     const freelancer = await User.findById(freelancerId);
     if (!freelancer || freelancer.userType !== 'freelancer') {
       return res.status(404).json({ message: 'Freelancer not found or user is not a freelancer' });
     }
 
-    job.applications.push(freelancerId);
+    if (client.wallet < job.budget) {
+      return res.status(400).json({ message: 'Client does not have enough money in the wallet' });
+    }
+
+    // Deduct money from client's wallet
+    client.wallet -= job.budget;
+    await client.save();
+
+    // Add money to freelancer's wallet
+    freelancer.wallet += job.budget;
+    await freelancer.save();
+
+    // Create wallet transactions
+    const clientTransaction = new WalletTransaction({
+      userId: client._id,
+      type: 'withdrawal',
+      amount: job.budget,
+      description: `Payment for job ${jobId}`
+    });
+    await clientTransaction.save();
+
+    const freelancerTransaction = new WalletTransaction({
+      userId: freelancer._id,
+      type: 'deposit',
+      amount: job.budget,
+      description: `Payment received for job ${jobId}`
+    });
+    await freelancerTransaction.save();
+
+    // Update job status
+    job.freelancer = freelancerId;
+    job.status = 'accepted';
     await job.save();
 
-    res.status(200).json({ message: 'Applied for job successfully', job });
+    res.status(200).json({ message: 'Applied for job successfully and payment processed', job });
   } catch (error) {
     console.error('Error applying for job:', error);
     res.status(400).json({ message: 'Error applying for job', error });
   }
 };
 
-// Accept a freelancer for a job
+// Accept freelancer for job and handle money transaction
 exports.acceptFreelancerForJob = async (req, res) => {
   const { jobId, freelancerId } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(freelancerId)) {
+    return res.status(400).json({ message: 'Invalid job ID or freelancer ID' });
+  }
 
   try {
     const job = await Job.findById(jobId);
@@ -227,12 +270,87 @@ exports.acceptFreelancerForJob = async (req, res) => {
       return res.status(404).json({ message: 'Freelancer not found or user is not a freelancer' });
     }
 
+    const client = await User.findById(job.client);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    if (client.wallet < job.budget) {
+      return res.status(400).json({ message: 'Insufficient funds in client wallet' });
+    }
+
+    // Proceed with the transaction
+    console.log(`Client wallet before transaction: ${client.wallet}`);
+    console.log(`Freelancer wallet before transaction: ${freelancer.wallet}`);
+
+    client.wallet -= job.budget;
+    freelancer.wallet += job.budget;
+
+    await client.save();
+    await freelancer.save();
+
+    console.log(`Client wallet after transaction: ${client.wallet}`);
+    console.log(`Freelancer wallet after transaction: ${freelancer.wallet}`);
+
+    // Record transactions
+    const clientTransaction = new WalletTransaction({
+      userId: job.client,
+      type: 'transfer',
+      amount: -job.budget,
+      description: `Payment for job ${jobId}`
+    });
+    await clientTransaction.save();
+
+    const freelancerTransaction = new WalletTransaction({
+      userId: freelancerId,
+      type: 'transfer',
+      amount: job.budget,
+      description: `Payment received for job ${jobId}`
+    });
+    await freelancerTransaction.save();
+
     job.acceptedFreelancer = freelancerId;
+    job.status = 'accepted';
     await job.save();
 
-    res.status(200).json({ message: 'Freelancer accepted for job successfully', job });
+    res.status(200).json({ message: 'Freelancer accepted and paid successfully', job });
   } catch (error) {
     console.error('Error accepting freelancer for job:', error);
     res.status(400).json({ message: 'Error accepting freelancer for job', error });
+  }
+};
+// Add money to client's wallet
+exports.addMoneyToWallet = async (req, res) => {
+  const { clientId, amount } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  if (amount <= 0) {
+    return res.status(400).json({ message: 'Amount must be greater than zero' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    client.wallet += amount;
+    await client.save();
+
+    const transaction = new WalletTransaction({
+      userId: clientId,
+      type: 'deposit',
+      amount,
+      description: 'Money added to wallet'
+    });
+    await transaction.save();
+
+    res.status(200).json({ message: 'Money added to wallet successfully', wallet: client.wallet });
+  } catch (error) {
+    console.error('Error adding money to wallet:', error);
+    res.status(400).json({ message: 'Error adding money to wallet', error });
   }
 };

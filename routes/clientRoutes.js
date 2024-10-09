@@ -15,4 +15,7 @@ router.post('/clients/:clientId/jobs', clientController.createJob);
 router.post('/jobs/apply', clientController.applyForJob);
 router.post('/jobs/accept', clientController.acceptFreelancerForJob);
 
+// Route to add money to client's wallet
+router.post('/add-money', clientController.addMoneyToWallet);
+
 module.exports = router;

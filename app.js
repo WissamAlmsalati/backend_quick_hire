@@ -1,12 +1,14 @@
-require('dotenv').config();
-
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const Chat = require('./models/chatModel'); // Import the Chat model
-const User = require('./models/userModel'); // Import the User model
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const Chat = require('./models/chatModel');
+const User = require('./models/userModel');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,13 +20,13 @@ const clientRoutes = require('./routes/clientRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const authRoutes = require('./routes/authRoutes');
 const freelancerRoutes = require('./routes/freelancerRoutes');
-const chatRoutes = require('./routes/chatRoutes'); // Import chat routes
+const chatRoutes = require('./routes/chatRoutes');
 
 app.use('/api/clients', clientRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/freelancers', freelancerRoutes);
-app.use('/api/chats', chatRoutes); // Use chat routes
+app.use('/api/chats', chatRoutes);
 
 // Serve the freelancer.html file
 app.get('/freelancer', (req, res) => {
@@ -89,7 +91,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3001; // Changed port to 3001
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
