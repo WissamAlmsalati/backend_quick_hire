@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
-const { verifySuperUser } = require('../middleware/auth');
+const userController = require('../controllers/userController'); // Import the userController
+const { verifySuperUser, authMiddleware } = require('../middleware/auth'); // Correctly import authMiddleware
 
 router.post('/create-superuser', clientController.createSuperUser);
 router.post('/create-project', clientController.createProject);
@@ -17,5 +18,8 @@ router.post('/jobs/accept', clientController.acceptFreelancerForJob);
 
 // Route to add money to client's wallet
 router.post('/add-money', clientController.addMoneyToWallet);
+
+// Route to get user (client or freelancer) by ID
+router.get('/user/:id', authMiddleware, userController.getUserById);
 
 module.exports = router;

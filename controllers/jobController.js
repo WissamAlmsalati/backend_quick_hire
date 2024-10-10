@@ -22,7 +22,14 @@ exports.createJob = async (req, res) => {
     }
 
     // Create new job
-    const job = new Job({ title, description, budget, deadline, client: clientId });
+    const job = new Job({ 
+      title, 
+      description, 
+      budget, 
+      deadline, 
+      clientName: client.username, // Set the clientName
+      client: clientId 
+    });
     await job.save();
 
     // Associate job with the client
@@ -75,7 +82,8 @@ exports.applyForJob = async (req, res) => {
 
 exports.getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find();
+    // Filter out jobs that have an accepted freelancer
+    const jobs = await Job.find({ acceptedFreelancer: { $exists: false } });
     res.status(200).json(jobs);
   } catch (error) {
     console.error('Error fetching jobs:', error);
@@ -157,8 +165,6 @@ exports.deleteJob = async (req, res) => {
     res.status(400).json({ message: 'Error deleting job', error });
   }
 };
-
-// Other functions such as getActiveProjectById, acceptApplication, deliverJob, and getJobApplications can be similarly implemented below...
 
 exports.getActiveProjectById = async (req, res) => {
   const { id } = req.params;

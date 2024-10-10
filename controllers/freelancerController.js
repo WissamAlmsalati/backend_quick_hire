@@ -154,7 +154,7 @@ exports.acceptFreelancerForJob = async (req, res) => {
     const clientTransaction = new WalletTransaction({
       userId: job.client,
       type: 'transfer',
-      amount: -job.budget,
+      amount: -job.budg ,
       description: `Payment for job ${jobId}`
     });
     await clientTransaction.save();
