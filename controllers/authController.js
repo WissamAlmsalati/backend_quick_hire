@@ -20,6 +20,8 @@ exports.register = async (req, res) => {
       user = new Client({ username, email, password, userType });
     } else if (userType === 'freelancer') {
       user = new Freelancer({ username, email, password, userType });
+    } else if (userType === 'superuser') {
+      user = new User({ username, email, password, userType });
     } else {
       return res.status(400).json({ message: 'Invalid user type' });
     }

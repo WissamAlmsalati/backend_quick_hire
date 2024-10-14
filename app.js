@@ -5,6 +5,8 @@ const socketIo = require('socket.io');
 const path = require('path');
 const dotenv = require('dotenv');
 const userRoute = require('./routes/userRoutes')
+const categoryRoutes = require('./routes/categoryRoutes'); // Add this line
+
 
 dotenv.config();
 
@@ -29,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/freelancers', freelancerRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/users',userRoute)
+app.use('/api/categories', categoryRoutes); // Add this line
 
 // Serve the freelancer.html file
 app.get('/freelancer', (req, res) => {

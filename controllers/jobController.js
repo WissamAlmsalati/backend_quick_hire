@@ -6,19 +6,23 @@ const OldProject = require('../models/oldProjectModel');
 const Rating = require('../models/ratingModel');
 
 exports.createJob = async (req, res) => {
-  const { clientId, title, description, budget, deadline } = req.body;
+  const { clientId, title, description, budget, deadline, skills, location, categoryId } = req.body;
 
-  // Validate clientId
-  if (!mongoose.Types.ObjectId.isValid(clientId)) {
-    return res.status(400).json({ message: 'Invalid client ID' });
+  // Validate clientId and categoryId
+  if (!mongoose.Types.ObjectId.isValid(clientId) || !mongoose.Types.ObjectId.isValid(categoryId)) {
+    return res.status(400).json({ message: 'Invalid client ID or category ID' });
   }
 
   try {
     const client = await User.findById(clientId);
-    
-    // Validate client existence and type
+    const category = await Category.findById(categoryId);
+
+    // Validate client and category existence
     if (!client || client.userType !== 'client') {
       return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
     }
 
     // Create new job
@@ -27,8 +31,11 @@ exports.createJob = async (req, res) => {
       description, 
       budget, 
       deadline, 
-      clientName: client.username, // Set the clientName
-      client: clientId 
+      skills, 
+      location: location || 'Remote', 
+      clientName: client.username, 
+      client: clientId,
+      category: categoryId // Link job to category
     });
     await job.save();
 
@@ -36,7 +43,7 @@ exports.createJob = async (req, res) => {
     client.jobs.push(job._id);
     await client.save();
 
-    res.status(201).json({ message: 'Job created successfully', job });
+    res.status(201).json({ message: 'Job created successfully', jobId: job._id });
   } catch (error) {
     console.error('Error creating job:', error);
     res.status(400).json({ message: 'Error creating job', error });
@@ -73,7 +80,7 @@ exports.applyForJob = async (req, res) => {
     job.applications.push(freelancerId);
     await job.save();
 
-    res.status(200).json({ message: 'Applied for job successfully', job });
+    res.status(200).json({ message: 'Applied for job successfully', jobId: job._id });
   } catch (error) {
     console.error('Error applying for job:', error);
     res.status(400).json({ message: 'Error applying for job', error });
@@ -83,8 +90,20 @@ exports.applyForJob = async (req, res) => {
 exports.getAllJobs = async (req, res) => {
   try {
     // Filter out jobs that have an accepted freelancer
-    const jobs = await Job.find({ acceptedFreelancer: { $exists: false } });
-    res.status(200).json(jobs);
+    const jobs = await Job.find({ acceptedFreelancer: { $exists: false } }).populate({
+      path: 'client',
+      select: 'username' // Assuming the User model has a 'username' field
+    }).lean(); // Use lean() to get plain JavaScript objects
+
+    // Add clientName to each job
+    const jobsWithClientName = jobs.map(job => {
+      if (job.client && job.client.username) {
+        job.clientName = job.client.username;
+      }
+      return job;
+    });
+
+    res.status(200).json(jobsWithClientName);
   } catch (error) {
     console.error('Error fetching jobs:', error);
     res.status(400).json({ message: 'Error fetching jobs', error });
@@ -100,8 +119,16 @@ exports.getJobById = async (req, res) => {
   }
 
   try {
-    const job = await Job.findById(id);
-    
+    const job = await Job.findById(id).populate({
+      path: 'client',
+      select: 'username' // Assuming the User model has a 'username' field
+    }).lean(); // Use lean() to get plain JavaScript objects
+
+    // Add clientName to the job
+    if (job.client && job.client.username) {
+      job.clientName = job.client.username;
+    }
+
     // Validate job existence
     if (!job) {
       return res.status(404).json({ message: 'Job not found' });
@@ -112,6 +139,7 @@ exports.getJobById = async (req, res) => {
     res.status(400).json({ message: 'Error fetching job', error });
   }
 };
+
 
 exports.updateJob = async (req, res) => {
   const { id } = req.params;
