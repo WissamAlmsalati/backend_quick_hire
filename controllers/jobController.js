@@ -4,6 +4,7 @@ const User = require('../models/userModel');
 const ActiveProject = require('../models/activeProjectSchema');
 const OldProject = require('../models/oldProjectModel');
 const Rating = require('../models/ratingModel');
+const Category = require('../models/categoryModel'); // Add this line
 
 exports.createJob = async (req, res) => {
   const { clientId, title, description, budget, deadline, skills, location, categoryId } = req.body;
@@ -45,8 +46,8 @@ exports.createJob = async (req, res) => {
 
     res.status(201).json({ message: 'Job created successfully', jobId: job._id });
   } catch (error) {
-    console.error('Error creating job:', error);
-    res.status(400).json({ message: 'Error creating job', error });
+    console.error('Error creating job:', error); // Log the error details
+    res.status(400).json({ message: 'Error creating job', error: error.message });
   }
 };
 
@@ -140,7 +141,6 @@ exports.getJobById = async (req, res) => {
   }
 };
 
-
 exports.updateJob = async (req, res) => {
   const { id } = req.params;
   const { title, description, budget, deadline } = req.body;
@@ -151,7 +151,7 @@ exports.updateJob = async (req, res) => {
   }
 
   try {
-    const job = await Job.findByIdAndUpdate(id, { title, description, budget, deadline }, { new: true });
+ const job = await Job.findByIdAndUpdate(id, { title, deadline }, { new: true });
     
     // Validate job existence
     if (!job) {
@@ -366,5 +366,63 @@ exports.getAllProjects = async (req, res) => {
     res.status(200).json(projects);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Get all categories
+exports.getAllCategories = async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Error fetching categories', error });
+  }
+};
+
+// Get category by name
+exports.getCategoryByName = async (req, res) => {
+  const { name } = req.params;
+
+  try {
+    const category = await Category.findOne({ name: name });
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    res.status(200).json(category);
+  } catch (error) {
+    console.error('Error fetching category:', error);
+    res.status(500).json({ message: 'Error fetching category', error });
+  }
+};
+
+// Get jobs by skill or title
+exports.getJobsBySkillOrTitle = async (req, res) => {
+  const { search } = req.params;
+  const searchRegex = new RegExp(`^${search}`, 'i'); // Case-insensitive regex for any search term starting with the search string
+
+  try {
+    const jobs = await Job.find({
+      $or: [
+        { skills: searchRegex },
+        { title: searchRegex }
+      ]
+    }).populate({
+      path: 'client',
+      select: 'username' // Assuming the User model has a 'username' field
+    }).lean(); // Use lean() to get plain JavaScript objects
+
+    // Add clientName to each job
+    const jobsWithClientName = jobs.map(job => {
+      if (job.client && job.client.username) {
+        job.clientName = job.client.username;
+      }
+      return job;
+    });
+
+    res.status(200).json(jobsWithClientName);
+  } catch (error) {
+    console.error('Error fetching jobs by skill or title:', error);
+    res.status(400).json({ message: 'Error fetching jobs by skill or title', error });
   }
 };

@@ -5,14 +5,17 @@ const jobSchema = new mongoose.Schema({
   description: { type: String, required: true },
   budget: { type: Number, required: true },
   deadline: { type: Date, required: true },
+  skills: { type: [String], required: true },
+  location: { type: String, default: 'Remote' },
   clientName: { type: String, required: true },
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true }, // Add category reference
   applications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  canApply: { type: Boolean, default: true },
   acceptedFreelancer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  skills: [{ type: String, required: true }],
-  location: { type: String, required: true, default: 'Remote' },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true } // Add category reference
+  canApply: { type: Boolean, default: true },
+  isCompleted: { type: Boolean, default: false }
 });
 
-module.exports = mongoose.model('Job', jobSchema);
+const Job = mongoose.model('Job', jobSchema);
+
+module.exports = Job;

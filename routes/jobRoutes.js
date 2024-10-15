@@ -43,4 +43,13 @@ if (jobController.getAllProjects) {
   console.error('getAllProjects is not defined in jobController');
 }
 
+// Route to get all categories
+router.get('/categories', jobController.getAllCategories);
+
+// Route to get category by name
+router.get('/categories/:name', jobController.getCategoryByName);
+
+// Route to get jobs by skill or title
+router.get('/search/:search', jobController.getJobsBySkillOrTitle);
+
 module.exports = router;

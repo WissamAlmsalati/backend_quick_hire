@@ -28,7 +28,7 @@ exports.register = async (req, res) => {
 
     await user.save();
     const token = user.generateAuthToken();
-    res.status(201).json({ token, id: user._id });
+    res.status(201).json({ token, id: user._id, userType: user.userType });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
@@ -50,7 +50,7 @@ exports.login = async (req, res) => {
     }
 
     const token = user.generateAuthToken();
-    res.status(200).json({ token, id: user._id });
+    res.status(200).json({ token, id: user._id, userType: user.userType });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
