@@ -6,11 +6,11 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  userType: { type: String, enum: ['client', 'freelancer', 'superuser'], default: 'client' }, // Add superuser to userType
+  userType: { type: String, enum: ['client', 'freelancer', 'superuser'], default: 'client' },
   jobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
   activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }],
   oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }],
-  wallet: { type: Number, default: 0 } // Add wallet field
+  wallet: { type: Number, default: 0 }
 });
 
 // Hash the password before saving the user
@@ -28,9 +28,9 @@ userSchema.methods.comparePassword = async function (password) {
 
 // Generate JWT token
 userSchema.methods.generateAuthToken = function () {
-  return jwt.sign({ id: this._id, userType: this.userType }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ id: this._id, userType: this.userType }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 module.exports = User;
