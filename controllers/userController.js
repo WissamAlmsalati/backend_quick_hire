@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const User = require('../models/userModel');
 
 // Get user information by ID
+
+
+// Get user information by ID
 exports.getUserById = async (req, res) => {
   const { userId } = req.params;
 
@@ -21,7 +24,6 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: 'Error fetching user', error: error.message });
   }
 };
-
 // Update user profile
 exports.updateUserProfile = async (req, res) => {
   const userId = req.params.id;
