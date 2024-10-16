@@ -1,8 +1,10 @@
 const User = require('../models/userModel');
 const Freelancer = require('../models/freelancerModel');
 const Client = require('../models/clientModel');
+const SuperUser = require('../models/superUserModel'); // Add this line
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
 
 // User registration
 exports.register = async (req, res) => {
@@ -21,7 +23,7 @@ exports.register = async (req, res) => {
     } else if (userType === 'freelancer') {
       user = new Freelancer({ username, email, password, userType });
     } else if (userType === 'superuser') {
-      user = new User({ username, email, password, userType });
+      user = new SuperUser({ username, email, password, userType, permissions: ['all'] }); // Use SuperUser model
     } else {
       return res.status(400).json({ message: 'Invalid user type' });
     }

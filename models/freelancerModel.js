@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const User = require('./userModel');
 
 const FreelancerSchema = new mongoose.Schema({
-  skills: { type: [String], default: [] }, // Make skills optional with default value
-  rate: { type: Number, default: 0 }, // Set default value for rate
-  portfolio: { type: [String], default: [] }, // Make portfolio optional with default value
-  bio: { type: String, default: '' }, // Make bio optional with default value
-  ratings: { type: [Number], default: [] }, // Make ratings optional with default value
+  skills: { type: [String], default: [] },
+  rate: { type: Number, default: 0 },
+  portfolio: { type: [String], default: [] },
+  bio: { type: String, default: '' },
+  ratings: { type: [Number], default: [] },
   jobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
   activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }],
   oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }],
-  wallet: { type: Number, default: 0 } // Add wallet field
+  wallet: { type: Number, default: 0 }
 });
 
 module.exports = User.discriminator('Freelancer', FreelancerSchema);

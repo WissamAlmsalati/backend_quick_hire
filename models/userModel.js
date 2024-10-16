@@ -28,7 +28,7 @@ userSchema.methods.comparePassword = async function (password) {
 
 // Generate JWT token
 userSchema.methods.generateAuthToken = function () {
-  return jwt.sign({ id: this._id, userType: this.userType }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ id: this._id, userType: this.userType }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
