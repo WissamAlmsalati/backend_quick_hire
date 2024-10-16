@@ -29,6 +29,13 @@ router.post('/deliver', jobController.deliverJob);
 // Get applications for a client's jobs
 router.get('/applications/:clientId', jobController.getJobApplications);
 
+
+router.get('/client/:clientId/jobs',jobController.getJobsByClientId);
+
+
+router.get('/:jobId/applications', jobController.getJobApplications);
+
+
 // Get all projects for a specific client
 if (jobController.getClientProjects) {
   router.get('/client/:clientId/projects', jobController.getClientProjects);

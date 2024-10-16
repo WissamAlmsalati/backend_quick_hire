@@ -98,6 +98,8 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+
+
 // Add Project to Freelancer
 exports.addProject = async (req, res) => {
   const { userId, title, description, photo, review } = req.body;
@@ -352,5 +354,29 @@ exports.addMoneyToWallet = async (req, res) => {
   } catch (error) {
     console.error('Error adding money to wallet:', error);
     res.status(400).json({ message: 'Error adding money to wallet', error });
+  }
+};
+
+
+
+// Get all jobs posted by a specific client
+exports.getClientJobs = async (req, res) => {
+  const { clientId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const jobs = await Job.find({ client: clientId });
+    res.status(200).json(jobs);
+  } catch (error) {
+    console.error('Error fetching client jobs:', error);
+    res.status(400).json({ message: 'Error fetching client jobs', error });
   }
 };

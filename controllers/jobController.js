@@ -426,3 +426,61 @@ exports.getJobsBySkillOrTitle = async (req, res) => {
     res.status(400).json({ message: 'Error fetching jobs by skill or title', error });
   }
 };
+
+
+
+exports.getJobsByClientId = async (req, res) => {
+  const { clientId } = req.params;
+
+  // Validate client ID
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+
+    // Validate client existence
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const jobs = await Job.find({ client: clientId }).populate({
+      path: 'client',
+      select: 'username' // Assuming the User model has a 'username' field
+    }).lean(); // Use lean() to get plain JavaScript objects
+
+    // Add clientName to each job
+    const jobsWithClientName = jobs.map(job => {
+      if (job.client && job.client.username) {
+        job.clientName = job.client.username;
+      }
+      return job;
+    });
+
+    res.status(200).json(jobsWithClientName);
+  } catch (error) {
+    console.error('Error fetching jobs by client ID:', error);
+    res.status(400).json({ message: 'Error fetching jobs by client ID', error });
+  }
+};
+
+
+exports.getJobApplications = async (req, res) => {
+  const { jobId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    return res.status(400).json({ message: 'Invalid job ID' });
+  }
+
+  try {
+    const job = await Job.findById(jobId).populate('applications');
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+    res.status(200).json({ applications: job.applications });
+  } catch (error) {
+    console.error('Error fetching job applications:', error);
+    res.status(400).json({ message: 'Error fetching job applications', error: error.message });
+  }
+};
