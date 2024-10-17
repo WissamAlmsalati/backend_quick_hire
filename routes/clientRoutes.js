@@ -16,13 +16,16 @@ router.post('/clients/:clientId/jobs', clientController.createJob);
 router.post('/jobs/apply', clientController.applyForJob);
 router.post('/jobs/accept', clientController.acceptFreelancerForJob);
 
-router.get('/client/:clientId/jobs', clientController.getClientJobs);
-
+router.get('/client/:clientId/jobs', clientController.getJobs);
+router.get('/client/:clientId/active-jobs', clientController.getActiveJobs);
 
 // Route to add money to client's wallet
 router.post('/add-money', clientController.addMoneyToWallet);
 
 // Route to get user (client or freelancer) by ID
 router.get('/user/:id', authMiddleware, userController.getUserById);
+
+// New route to get active projects for a specific client
+router.get('/client/:clientId/active-projects', clientController.getActiveProjectsForClient);
 
 module.exports = router;

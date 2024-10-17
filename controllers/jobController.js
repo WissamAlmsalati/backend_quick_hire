@@ -216,6 +216,7 @@ exports.getActiveProjectById = async (req, res) => {
   }
 };
 
+
 exports.acceptApplication = async (req, res) => {
   const { jobId, freelancerId } = req.body;
 
@@ -264,6 +265,11 @@ exports.acceptApplication = async (req, res) => {
     // Add active project to freelancer's list
     freelancer.activeProjects.push(activeProject._id);
     await freelancer.save();
+
+    // Add active project to client's list
+    const client = await User.findById(job.client);
+    client.activeProjects.push(activeProject._id);
+    await client.save();
 
     await job.save();
 
@@ -484,3 +490,6 @@ exports.getJobApplications = async (req, res) => {
     res.status(400).json({ message: 'Error fetching job applications', error: error.message });
   }
 };
+
+
+

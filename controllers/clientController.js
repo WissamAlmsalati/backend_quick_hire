@@ -5,6 +5,7 @@ const Job = require('../models/jobModel'); // Import the Job model
 const WalletTransaction = require('../models/walletModel'); // Import the WalletTransaction model
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const ActiveProject = require('../models/activeProjectSchema'); // Ensure this line is present
 
 exports.createProject = async (req, res) => {
   const { clientId, title, description, budget, deadline } = req.body;
@@ -97,6 +98,8 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
 
 
 
@@ -378,5 +381,91 @@ exports.getClientJobs = async (req, res) => {
   } catch (error) {
     console.error('Error fetching client jobs:', error);
     res.status(400).json({ message: 'Error fetching client jobs', error });
+  }
+};
+
+// ... existing code ...
+
+// Get jobs and active projects for a client by ID and token
+// Get active jobs for a client
+exports.getActiveJobs = async (req, res) => {
+  const { clientId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const activeJobs = await Job.find({ client: clientId, status: 'active' });
+    res.status(200).json(activeJobs);
+  } catch (error) {
+    console.error('Error fetching active jobs:', error);
+    res.status(400).json({ message: 'Error fetching active jobs', error });
+  }
+};
+
+// Get all jobs for a client
+exports.getJobs = async (req, res) => {
+  const { clientId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const jobs = await Job.find({ client: clientId });
+    res.status(200).json(jobs);
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    res.status(400).json({ message: 'Error fetching jobs', error });
+  }
+};
+
+
+// Other methods...
+
+// Get active projects for a specific client
+
+
+// Get active projects for a specific client
+
+
+// Get active projects for a specific client
+exports.getActiveProjectsForClient = async (req, res) => {
+  const { clientId } = req.params;
+
+  // Validate client ID
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+
+    // Validate client existence
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const activeProjects = await ActiveProject.find({ client: clientId })
+      .populate('job')
+      .populate('freelancer')
+      .populate('client')
+      .lean(); // Use lean() to get plain JavaScript objects
+
+    res.status(200).json(activeProjects);
+  } catch (error) {
+    console.error('Error fetching active projects:', error);
+    res.status(400).json({ message: 'Error fetching active projects', error });
   }
 };
