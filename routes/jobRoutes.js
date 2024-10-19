@@ -36,6 +36,8 @@ router.get('/client/:clientId/jobs',jobController.getJobsByClientId);
 router.get('/client/:clientId/applications', jobController.getApplicationsForClient);
 
 
+router.get('/jobs/:jobId/applications', jobController.getApplicationsByJobId);
+
 
 router.get('/:jobId/applications', jobController.getJobApplications);
 
