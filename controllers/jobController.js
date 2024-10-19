@@ -435,6 +435,8 @@ exports.getJobsBySkillOrTitle = async (req, res) => {
 
 
 
+
+// Get jobs by client ID
 exports.getJobsByClientId = async (req, res) => {
   const { clientId } = req.params;
 
@@ -451,7 +453,7 @@ exports.getJobsByClientId = async (req, res) => {
       return res.status(404).json({ message: 'Client not found or user is not a client' });
     }
 
-    const jobs = await Job.find({ client: clientId }).populate({
+    const jobs = await Job.find({ client: clientId, canApply: true }).populate({
       path: 'client',
       select: 'username' // Assuming the User model has a 'username' field
     }).lean(); // Use lean() to get plain JavaScript objects
@@ -470,7 +472,6 @@ exports.getJobsByClientId = async (req, res) => {
     res.status(400).json({ message: 'Error fetching jobs by client ID', error });
   }
 };
-
 
 exports.getJobApplications = async (req, res) => {
   const { jobId } = req.params;
@@ -492,4 +493,31 @@ exports.getJobApplications = async (req, res) => {
 };
 
 
+
+
+// Get applications for a specific client
+exports.getApplicationsForClient = async (req, res) => {
+  const { clientId } = req.params;
+
+  // Validate client ID
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    return res.status(400).json({ message: 'Invalid client ID' });
+  }
+
+  try {
+    const client = await User.findById(clientId);
+
+    // Validate client existence
+    if (!client || client.userType !== 'client') {
+      return res.status(404).json({ message: 'Client not found or user is not a client' });
+    }
+
+    const applications = await Job.getApplicationsByClientId(clientId);
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(400).json({ message: 'Error fetching applications', error });
+  }
+};
 
