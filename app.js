@@ -4,6 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const dotenv = require('dotenv');
+const fs = require('fs');
 const userRoute = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 
@@ -18,6 +19,12 @@ const io = socketIo(server);
 
 app.use(express.json());
 
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 const clientRoutes = require('./routes/clientRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +38,8 @@ app.use('/api/freelancers', freelancerRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/users', userRoute);
 app.use('/api/categories', categoryRoutes);
+app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve the freelancer.html file
 app.get('/freelancer', (req, res) => {
