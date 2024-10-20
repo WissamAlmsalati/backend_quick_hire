@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require('socket.io');
 const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
@@ -15,7 +15,7 @@ const User = require('./models/userModel');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
+const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
@@ -61,11 +61,17 @@ app.use((req, res, next) => {
   res.status(404).json({ message: 'Resource not found' });
 });
 
+// MongoDB connection with error handling
 mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 30000 // Increase timeout to 30 seconds
 })
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err.message);
+    process.exit(1); // Exit the application if MongoDB connection fails
+  });
 
 io.on('connection', (socket) => {
   console.log('New client connected');
@@ -81,8 +87,12 @@ io.on('connection', (socket) => {
     console.log(`User ${userId} joined room ${jobId}`);
 
     // Fetch previous chat messages for the room
-    const messages = await Chat.find({ jobId }).sort({ createdAt: 1 });
-    socket.emit('previousMessages', messages);
+    try {
+      const messages = await Chat.find({ jobId }).sort({ createdAt: 1 });
+      socket.emit('previousMessages', messages);
+    } catch (error) {
+      console.error('Error fetching chat messages:', error.message);
+    }
   });
 
   socket.on('sendMessage', async ({ jobId, sender, message }) => {
