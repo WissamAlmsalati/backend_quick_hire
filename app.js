@@ -44,6 +44,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/users', userRoute);
 app.use('/api/categories', categoryRoutes);
 app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve the freelancer.html file
 app.get('/freelancer', (req, res) => {
