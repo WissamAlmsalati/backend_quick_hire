@@ -575,13 +575,31 @@ exports.getAppliedJobs = async (req, res) => {
   }
 
   try {
-    const appliedJobs = await AppliedJob.find({ freelancerId }).populate('jobId', 'title description budget deadline'); // Assuming the Job model has these fields
-    
+    const appliedJobs = await AppliedJob.find({ freelancerId })
+      .populate({
+        path: 'jobId',
+        select: 'title client',
+        populate: {
+          path: 'client',
+          select: 'username'
+        }
+      });
+
     // Validate applied jobs existence
     if (!appliedJobs.length) {
       return res.status(404).json({ message: 'No applied jobs found for this freelancer' });
     }
-    res.status(200).json({ appliedJobs });
+
+    // Format the response to include job title and client username
+    const formattedAppliedJobs = appliedJobs.map(appliedJob => ({
+      _id: appliedJob._id,
+      jobTitle: appliedJob.jobId.title,
+      clientName: appliedJob.jobId.client.username,
+      appliedAt: appliedJob.appliedAt,
+      status: appliedJob.status
+    }));
+
+    res.status(200).json({ appliedJobs: formattedAppliedJobs });
   } catch (error) {
     console.error('Error fetching applied jobs:', error);
     res.status(400).json({ message: 'Error fetching applied jobs', error });
