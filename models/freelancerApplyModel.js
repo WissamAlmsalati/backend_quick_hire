@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
-const freelancerApplySchema = new mongoose.Schema({
+const appliedJobSchema = new mongoose.Schema({
   jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
   freelancerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  status: { type: String, enum: ['preparing', 'active', 'rejected'], default: 'preparing' },
-  appliedAt: { type: Date, default: Date.now }
+  appliedAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['applied', 'accepted', 'rejected'], default: 'applied' }
 });
 
-const FreelancerApply = mongoose.model('FreelancerApply', freelancerApplySchema);
+const AppliedJob = mongoose.model('AppliedJob', appliedJobSchema);
 
-module.exports = FreelancerApply;
+module.exports = AppliedJob;

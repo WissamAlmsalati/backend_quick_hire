@@ -5,6 +5,7 @@ const ActiveProject = require('../models/activeProjectSchema');
 const OldProject = require('../models/oldProjectModel');
 const Rating = require('../models/ratingModel');
 const Category = require('../models/categoryModel'); // Add this line
+const AppliedJob = require('../models/freelancerApplyModel'); // Import the new model
 
 exports.createJob = async (req, res) => {
   const { clientId, title, description, budget, deadline, skills, location, categoryId } = req.body;
@@ -51,6 +52,8 @@ exports.createJob = async (req, res) => {
   }
 };
 
+
+
 exports.applyForJob = async (req, res) => {
   const { jobId, freelancerId } = req.body;
 
@@ -81,12 +84,21 @@ exports.applyForJob = async (req, res) => {
     job.applications.push(freelancerId);
     await job.save();
 
+    // Save the applied job to the new collection
+    const appliedJob = new AppliedJob({
+      jobId,
+      freelancerId,
+      status: 'applied'
+    });
+    await appliedJob.save();
+
     res.status(200).json({ message: 'Applied for job successfully', jobId: job._id });
   } catch (error) {
     console.error('Error applying for job:', error);
     res.status(400).json({ message: 'Error applying for job', error });
   }
 };
+
 
 exports.getAllJobs = async (req, res) => {
   try {
@@ -271,6 +283,9 @@ exports.acceptApplication = async (req, res) => {
     client.activeProjects.push(activeProject._id);
     await client.save();
 
+    // Update the applied job status
+    await AppliedJob.findOneAndUpdate({ jobId, freelancerId }, { status: 'accepted' });
+
     await job.save();
 
     res.status(200).json({ message: 'Application accepted successfully', freelancer });
@@ -279,6 +294,7 @@ exports.acceptApplication = async (req, res) => {
     res.status(400).json({ message: 'Error accepting application', error });
   }
 };
+
 
 exports.deliverJob = async (req, res) => {
   const { jobId, rating, review, comment } = req.body;
@@ -321,12 +337,16 @@ exports.deliverJob = async (req, res) => {
     
     await ActiveProject.findByIdAndDelete(activeProject._id);
 
+    // Update the applied job status
+    await AppliedJob.findOneAndUpdate({ jobId, freelancerId: activeProject.freelancer }, { status: 'completed' });
+
     res.status(200).json({ message: 'Job delivered successfully', newRating });
   } catch (error) {
     console.error('Error delivering job:', error);
     res.status(400).json({ message: 'Error delivering job', error });
   }
 };
+
 
 exports.getJobApplications = async (req, res) => {
   const { jobId } = req.params;
@@ -337,13 +357,13 @@ exports.getJobApplications = async (req, res) => {
   }
 
   try {
-    const job = await Job.findById(jobId).populate('applications');
+    const applications = await AppliedJob.find({ jobId }).populate('freelancerId', 'username'); // Assuming the User model has a 'username' field
     
     // Validate job existence
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
+    if (!applications.length) {
+      return res.status(404).json({ message: 'No applications found for this job' });
     }
-    res.status(200).json({ applications: job.applications });
+    res.status(200).json({ applications });
   } catch (error) {
     console.error('Error fetching job applications:', error);
     res.status(400).json({ message: 'Error fetching job applications', error });
