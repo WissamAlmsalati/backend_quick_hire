@@ -1,7 +1,9 @@
+const mongoose = require('mongoose');
 const Freelancer = require('../models/freelancerModel');
 const Job = require('../models/jobModel');
 const WalletTransaction = require('../models/walletModel');
 const User = require('../models/userModel');
+const FreelancerApply = require('../models/freelancerApplyModel'); // Ensure this model is defined
 
 // Get all freelancers
 exports.getAllFreelancers = async (req, res) => {
@@ -18,8 +20,12 @@ exports.getAllFreelancers = async (req, res) => {
 exports.getFreelancerById = async (req, res) => {
   const { id } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid freelancer ID' });
+  }
+
   try {
-    const freelancer = await Freelancer.findById(id).populate('projects');
+    const freelancer = await Freelancer.findById(id).populate('jobs').populate('activeProjects').populate('oldProjects');
     if (!freelancer) {
       return res.status(404).json({ message: 'Freelancer not found' });
     }
@@ -49,6 +55,10 @@ exports.updateFreelancer = async (req, res) => {
   const { id } = req.params;
   const { username, email, skills, rate, portfolio, bio, ratings } = req.body;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid freelancer ID' });
+  }
+
   try {
     const freelancer = await Freelancer.findByIdAndUpdate(id, { username, email, skills, rate, portfolio, bio, ratings }, { new: true });
     if (!freelancer) {
@@ -64,6 +74,10 @@ exports.updateFreelancer = async (req, res) => {
 // Delete freelancer
 exports.deleteFreelancer = async (req, res) => {
   const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid freelancer ID' });
+  }
 
   try {
     const freelancer = await Freelancer.findByIdAndDelete(id);
@@ -104,16 +118,29 @@ exports.applyForJob = async (req, res) => {
   const { jobId } = req.body;
   const freelancerId = req.user.id; // Assuming you have user authentication
 
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    return res.status(400).json({ message: 'Invalid job ID' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(freelancerId)) {
+    return res.status(400).json({ message: 'Invalid freelancer ID' });
+  }
+
   try {
     const job = await Job.findById(jobId);
     if (!job) {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    job.applications.push(freelancerId);
-    await job.save();
+    const application = new FreelancerApply({
+      jobId,
+      freelancerId,
+      status: 'preparing'
+    });
 
-    res.status(200).json({ message: 'Applied for job successfully', job });
+    await application.save();
+
+    res.status(200).json({ message: 'Applied for job successfully', application });
   } catch (error) {
     console.error('Error applying for job:', error);
     res.status(400).json({ message: 'Error applying for job', error });
@@ -121,9 +148,12 @@ exports.applyForJob = async (req, res) => {
 };
 
 // Client accepts a freelancer and pays them
-// Client accepts a freelancer and pays them
 exports.acceptFreelancerForJob = async (req, res) => {
   const { jobId, freelancerId } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(freelancerId)) {
+    return res.status(400).json({ message: 'Invalid job ID or freelancer ID' });
+  }
 
   try {
     const job = await Job.findById(jobId);
@@ -154,7 +184,7 @@ exports.acceptFreelancerForJob = async (req, res) => {
     const clientTransaction = new WalletTransaction({
       userId: job.client,
       type: 'transfer',
-      amount: -job.budg ,
+      amount: -job.budget, // Fix typo here
       description: `Payment for job ${jobId}`
     });
     await clientTransaction.save();
@@ -171,5 +201,33 @@ exports.acceptFreelancerForJob = async (req, res) => {
   } catch (error) {
     console.error('Error accepting freelancer for job:', error);
     res.status(400).json({ message: 'Error accepting freelancer for job', error });
+  }
+};
+
+// Update application status
+exports.updateApplicationStatus = async (req, res) => {
+  const { applicationId, status } = req.body;
+
+  if (!['preparing', 'active', 'rejected'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(applicationId)) {
+    return res.status(400).json({ message: 'Invalid application ID' });
+  }
+
+  try {
+    const application = await FreelancerApply.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    application.status = status;
+    await application.save();
+
+    res.status(200).json({ message: 'Application status updated successfully', application });
+  } catch (error) {
+    console.error('Error updating application status:', error);
+    res.status(400).json({ message: 'Error updating application status', error });
   }
 };

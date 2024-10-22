@@ -25,6 +25,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 // Update user profile
+
 exports.updateUserProfile = async (req, res) => {
   const userId = req.params.id;
   const updates = req.body;

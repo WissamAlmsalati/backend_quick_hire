@@ -7,6 +7,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   userType: { type: String, enum: ['client', 'freelancer', 'superuser'], default: 'client' },
+  bio: { type: String, default: '' }, // Added bio field
+  skills: { type: [String], default: [] }, // Added skills field
+  rate: { type: Number, default: 0 }, // Added rate field
   jobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
   activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }],
   oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }],
