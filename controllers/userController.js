@@ -2,9 +2,6 @@ const mongoose = require('mongoose');
 const User = require('../models/userModel');
 
 // Get user information by ID
-
-
-// Get user information by ID
 exports.getUserById = async (req, res) => {
   const { userId } = req.params;
 
@@ -24,8 +21,8 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: 'Error fetching user', error: error.message });
   }
 };
-// Update user profile
 
+// Update user profile
 exports.updateUserProfile = async (req, res) => {
   const userId = req.params.id;
   const updates = req.body;
@@ -41,6 +38,14 @@ exports.updateUserProfile = async (req, res) => {
     if (updates[key] !== '' && updates[key] !== null && updates[key] !== undefined) {
       filteredUpdates[key] = updates[key];
     }
+  }
+
+  // Handle rates field
+  if (filteredUpdates.rates) {
+    filteredUpdates.rates = filteredUpdates.rates.map(rate => ({
+      name: rate.name,
+      price: rate.price
+    }));
   }
 
   try {

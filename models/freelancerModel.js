@@ -10,7 +10,11 @@ const FreelancerSchema = new mongoose.Schema({
   jobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
   activeProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ActiveProject' }],
   oldProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'OldProject' }],
-  wallet: { type: Number, default: 0 }
+  wallet: { type: Number, default: 0 },
+  rates: [{ // Added rates field
+    name: { type: String, required: true },
+    price: { type: Number, required: true }
+  }]
 });
 
 module.exports = User.discriminator('Freelancer', FreelancerSchema);
