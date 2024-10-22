@@ -49,7 +49,11 @@ exports.updateUserProfile = async (req, res) => {
   }
 
   try {
-    const user = await User.findByIdAndUpdate(userId, filteredUpdates, { new: true });
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: filteredUpdates },
+      { new: true, runValidators: true }
+    );
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
