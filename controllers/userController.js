@@ -35,8 +35,16 @@ exports.updateUserProfile = async (req, res) => {
     return res.status(400).json({ message: 'Invalid user ID' });
   }
 
+  // Filter out empty fields
+  const filteredUpdates = {};
+  for (const key in updates) {
+    if (updates[key] !== '' && updates[key] !== null && updates[key] !== undefined) {
+      filteredUpdates[key] = updates[key];
+    }
+  }
+
   try {
-    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+    const user = await User.findByIdAndUpdate(userId, filteredUpdates, { new: true });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
