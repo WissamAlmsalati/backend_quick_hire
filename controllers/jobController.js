@@ -602,6 +602,6 @@ exports.getAppliedJobs = async (req, res) => {
     res.status(200).json({ appliedJobs: formattedAppliedJobs });
   } catch (error) {
     console.error('Error fetching applied jobs:', error);
-    res.status(400).json({ message: 'Error fetching applied jobs', error });
+    res.status(400).json({ message: 'Error fetching applied jobs', error: error.message });
   }
 };
