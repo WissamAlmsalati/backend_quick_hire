@@ -7,11 +7,12 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const userRoute = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const WebSocket = require('ws');
+const Chat = require('./models/chatModel'); // Assume Chat is your Mongoose model for chat messages
+const User = require('./models/userModel'); // Assume User is your Mongoose model for users
+
 
 dotenv.config();
-
-const Chat = require('./models/chatModel');
-const User = require('./models/userModel');
 
 const app = express();
 const server = http.createServer(app);
@@ -73,56 +74,92 @@ mongoose.connect(process.env.MONGO_URI, {
     process.exit(1); // Exit the application if MongoDB connection fails
   });
 
-io.on('connection', (socket) => {
+
+  // Initialize WebSocket Server
+  const wss = new WebSocket.Server({ port: 8080 });
+  
+// Inside your WebSocket connection handler
+wss.on('connection', (ws) => {
   console.log('New client connected');
 
-  socket.on('joinRoom', async ({ jobId, userId }) => {
-    if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(userId)) {
-      console.log('Invalid jobId or userId');
-      return;
-    }
+  ws.on('message', async (data) => {
+    const parsedData = JSON.parse(data);
 
-    socket.join(jobId);
-    socket.userId = userId; // Store the userId in the socket session
-    console.log(`User ${userId} joined room ${jobId}`);
+    // User joining a chat room
+    if (parsedData.event === 'joinRoom') {
+      const { jobId, userId } = parsedData;
 
-    // Fetch previous chat messages for the room
-    try {
-      const messages = await Chat.find({ jobId }).sort({ createdAt: 1 });
-      socket.emit('previousMessages', messages);
-    } catch (error) {
-      console.error('Error fetching chat messages:', error.message);
-    }
-  });
-
-  socket.on('sendMessage', async ({ jobId, sender, message }) => {
-    try {
-      const receiver = jobId; // Use jobId as the receiver ID
-
-      // Fetch the username from the database using the userId
-      const user = await User.findById(sender);
-      if (!user) {
-        throw new Error('User not found');
+      // Validate userId and jobId
+      if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(userId)) {
+        ws.send(JSON.stringify({ error: 'Invalid jobId or userId' }));
+        return;
       }
 
-      const chatMessage = new Chat({
-        jobId: new mongoose.Types.ObjectId(jobId),
-        sender: new mongoose.Types.ObjectId(sender),
-        receiver: new mongoose.Types.ObjectId(receiver),
-        message,
-        username: user.username // Include the username in the message
-      });
-      await chatMessage.save();
-      io.to(jobId).emit('receiveMessage', { ...chatMessage.toObject(), username: user.username });
-    } catch (error) {
-      console.error('Error saving chat message:', error.message);
+      // Store userId and jobId in the WebSocket session
+      ws.userId = userId;
+      ws.jobId = jobId;
+
+      console.log(`User ${ws.userId} joined room ${ws.jobId}`);
+
+      // Fetch previous messages from the database
+      try {
+        const messages = await Chat.find({ jobId }).sort({ createdAt: 1 });
+        ws.send(JSON.stringify({ event: 'previousMessages', messages }));
+      } catch (error) {
+        console.error('Error fetching chat messages:', error.message);
+        ws.send(JSON.stringify({ error: 'Error fetching chat messages' }));
+      }
+    }
+
+    // Handle sending a message
+    if (parsedData.event === 'sendMessage') {
+      const { jobId, sender, message } = parsedData;
+
+      try {
+        const user = await User.findById(sender);
+        if (!user) {
+          ws.send(JSON.stringify({ error: 'User not found' }));
+          return;
+        }
+
+        const chatMessage = new Chat({
+          jobId: new mongoose.Types.ObjectId(jobId),
+          sender: new mongoose.Types.ObjectId(sender),
+          message,
+          username: user.username,
+        });
+
+        await chatMessage.save();
+
+        // Broadcast the message to all users in the same job room
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN && client.jobId === jobId) {
+            client.send(JSON.stringify({
+              event: 'receiveMessage',
+              message: {
+                jobId,
+                sender: sender,
+                message,
+                username: user.username,
+              },
+            }));
+          }
+        });
+
+      } catch (error) {
+        console.error('Error saving chat message:', error.message);
+        ws.send(JSON.stringify({ error: 'Error saving chat message' }));
+      }
     }
   });
 
-  socket.on('disconnect', () => {
+  ws.on('close', () => {
     console.log('Client disconnected');
   });
 });
+
+  console.log('WebSocket server is running on ws://localhost:8080');
+  
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
